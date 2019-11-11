@@ -87,6 +87,7 @@ const importSelectedClipboard = () => {
 }
 
 const drawProgramList = ({ programs, mismatch }) => {
+    console.log(programs)
   let selectedNotes = getSelectedNotes()
   programParamElem.innerHTML = ''
   const programListElem = document.getElementById('program-list')

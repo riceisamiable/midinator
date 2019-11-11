@@ -242,7 +242,7 @@ const exportVideo = (outputPath) => {
     } else runFFmpeg(outputPath)
   }
 
-  console.log('rendering frames')
+  //console.log('rendering frames')
   renderFrame()
 }
 

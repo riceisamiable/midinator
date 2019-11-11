@@ -112,7 +112,7 @@ const renderColumnParams = ({ programParamElem, program }) => {
     const columnInput = document.createElement('div')
     columnInput.className = 'column'
 
-    columnInput.addEventListener('click', (event) => {
+    columnInput.addEventListener('mouseover', (event) => {
       if (columnParams.type !== 'manual') return event.stopPropagation()
       if (columnParams.manualSelections[i]) {
         delete columnParams.manualSelections[i]

@@ -21,9 +21,10 @@ const roomWidth = (colSpacing + singleColumnWidth) * colRowCount
 const roomDepth = (colSpacing + singleColumnWidth) * colDepthCount
 const imageColumnWidth = 40
 
+
 function setup () {
   scene = new THREE.Scene()
-  scene.background = new THREE.Color(0xC8C8C8)
+  scene.background = new THREE.Color(0x000000)
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 2, 1000)
   camera.position.z = roomDepth
   camera.position.x = roomWidth
@@ -34,6 +35,42 @@ function setup () {
   controls = new THREE.OrbitControls(camera, renderer.domElement)
 
   geometry = new THREE.BoxGeometry(singleColumnWidth, colHeight, singleColumnWidth)
+
+//For Lights
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.gammaInput = true;
+	renderer.gammaOutput = true;
+//For Lights
+  var spotLight = new THREE.SpotLight( 0xFFffff, 1.0 );
+      spotLight.position.set( 400, 200, 400 );
+      spotLight.castShadow = true;
+      spotLight.angle = 0.70;
+      spotLight.decay = 1.5;
+      spotLight.distance = 800;
+      //spotLight.penumbra = 0.9;
+      scene.add(spotLight);
+
+      console.log('here');
+
+    //Add point where SpotLight points towards
+      scene.add(spotLight.target);
+      spotLight.target.position.x = 0;
+      spotLight.target.position.y = 0;
+      spotLight.target.position.z = 0;
+
+
+
+   // Add ground for light to shine on
+      var groundGeo = new THREE.PlaneBufferGeometry(10000, 10000);
+      var groundMat = new THREE.MeshPhongMaterial({
+      color : 0xffffff,
+        });
+      var ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -50;
+      ground.receiveShadow = true;
+      scene.add(ground);
 
   for (let i = 0; i < 16; i++) {
     const z = Math.floor(i / 4)
@@ -57,7 +94,7 @@ function setup () {
     const regularObject = new THREE.Mesh( geometry, defaultMaterial)
     regularObject.position.set(xValue, 0, zValue)
     scene.add(regularObject)
-    scene.add(regularObject)
+    //scene.add(regularObject)
   }
 
   document.body.appendChild(renderer.domElement)
