@@ -1,3 +1,4 @@
 node_modules
 tmp
 frames
+.DS_Store
