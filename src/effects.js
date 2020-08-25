@@ -26,6 +26,8 @@ const noiseEffect = ({ ctx, totalHeight, width, height, noise, startY }) => {
   }
 }
 
+
+
 module.exports = {
   noiseEffect
 }

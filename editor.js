@@ -1,3 +1,5 @@
+console.log(process.pid);
+
 const fs = require('fs')
 
 const leftpad = require('leftpad')
@@ -12,13 +14,17 @@ const ipc = require('electron').ipcRenderer
 const win = getCurrentWindow()
 
 const config = require('./config')
-let Programs = require('./src/programs')
+let ProgramWrapper = require('./src/programs')
 const { renderApp, setPosition } = require('./src/app')
 const { renderColumns, getColumns } = require('./src/columns')
 const { getPlayer, loadMidiPlayer } = require('./src/player')
 const { getProject, setProject } = require('./src/project')
 const { getMidiEvent } = require('./src/utils')
 let Audio = require('./src/audio')
+let frameDataFile
+//console.log(render[7439])
+
+//const { runTest } = require('./src/programs/solid')
 
 require('./src/shortcuts')
 
@@ -27,6 +33,8 @@ const progressElem = document.getElementById('progress')
 const timeline = document.getElementById('timeline')
 const canvas = document.createElement('canvas')
 const ctx = canvas.getContext('2d')
+
+
 canvas.width = config.videoWidth
 canvas.height = config.videoHeight
 
@@ -63,17 +71,27 @@ const init = () => {
 
       Project.midiEvents = Object.values(merged).sort((a, b) => a.tick - b.tick)
 
+//Load the External Program (Animaiton) videos
+      if (Project.programs.length) {
+        ProgramWrapper.load(Project.programs)
+        console.log('boom')
+      }
+
+      //console.log(render[1])
+
+    //  console.log(bongo[1])
+
       if (Project.tempo) {
         const player = getPlayer()
         player.setTempo(Project.tempo)
       }
+      console.log('one')
       renderApp()
+
     })
   }
 
-  if (Project.programs.length) {
-    Programs.load(Project.programs)
-  }
+
 
   if (!fs.existsSync('./frames')) {
     fs.mkdirSync('./frames')
@@ -100,9 +118,48 @@ const loadMidiFile = () => {
       const player = getPlayer()
       Project.midiEvents = player.getEvents()[0]
       renderApp()
+
     }
   })
 }
+
+
+//Pre Render All Positions of Animations
+  let render = {}
+  preRender =  () => {
+    // const player = getPlayer()
+    // const Project = getProject()
+    // //console.log(Project)
+    //  for (let i = 1; i < player.totalTicks + 1; i++ ){
+    //    let tic = []
+    //     for(let p = 0; p < Project.midiEvents.length; p++){
+    //       const midiEvent = Project.midiEvents[p]
+    //        if (midiEvent.tick > i ) continue
+    //        if (midiEvent.name !== 'Note on') continue
+    //        if (!midiEvent.programs.length) continue
+    //       midiEvent.programs.forEach((program) => {
+    //         const end = program.params.length + midiEvent.tick
+    //         if ( i > end) return
+    //         const delta = i - midiEvent.tick
+    //         const cnvs = ProgramWrapper.runTest(program.name, {
+    //           canvasHeight: canvas.height,
+    //           canvasWidth: canvas.width,
+    //           delta,
+    //           ...program.params
+    //         }, program.columnParams)
+    //         tic.push(cnvs)
+    //
+    //           })
+    //     }
+    //     //console.log(tic)
+    //     render[i] = tic
+    //   }
+    //jsonfile.writeFileSync('frameData.json', render)
+    frameDataFile = JSON.parse(fs.readFileSync('./frameData.json'))
+
+    //render = {};
+    console.log('Pre Render Complete')
+  }
 
 const play = () => {
   const player = getPlayer()
@@ -116,6 +173,7 @@ const play = () => {
     if (elem && elem.parentNode) elem.parentNode.removeChild(elem)
     return document.querySelector('#play').innerHTML = 'Play'
   }
+
 
   let currentTick = 0
   const currentPosition = document.createElement('div')
@@ -132,44 +190,80 @@ const play = () => {
     // reset canvas
     canvas.width = canvas.width
 
-    const Project = getProject()
-    for (let e=0; e < Project.midiEvents.length; e++) {
-      const midiEvent = Project.midiEvents[e]
 
-      if (midiEvent.tick > currentTick) continue
-      if (midiEvent.name !== 'Note on') continue
-      if (!midiEvent.programs.length) continue
+// This draws the preprendered data
+  const currentFrame = frameDataFile[currentTick] //render[currentTick]
+    if(currentFrame){
+    currentFrame.forEach((item, i) => {
+      if(currentFrame[i].img){
+        let img = document.createElement('img')
+        img.src = currentFrame[i].img //currentFrame[i].img
+        //console.log(currentFrame[i].img)
+        // console.log('Bongo Below: ')
+        // console.log(bongo[currentTick][i].img)
+        // console.log(img)
 
-      midiEvent.programs.forEach((program) => {
-        const end = program.params.length + midiEvent.tick
-        if (currentTick > end) return
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        //ipc.send('video', { Data: img, type: 'external' })
+      } else {
 
-        const delta = currentTick - midiEvent.tick
-        const cnvs = Programs.run(program.name, {
-          canvasHeight: canvas.height,
-          canvasWidth: canvas.width,
-          delta,
-          ...program.params
-        })
+    //Original Stuff
+      console.log('no img')
+      ctx.fillStyle = currentFrame[i].color
+      ctx.fillRect(0, currentFrame[i].yValue, currentFrame[i].canvasWidth, currentFrame[i].heightValue)
 
-        const columns = getColumns({ delta, ...program.columnParams, ...program.params })
-        if (!columns.length) return ctx.drawImage(cnvs, 0, 0)
-        renderColumns({ cnvs, ctx, columns })
-      })
-    }
+    //New Attempt
+      // ipc.send('video', { color: currentFrame[i].color,
+      //                     height: currentFrame[i].heightValue,
+      //                     y: currentFrame[i].yValue,
+      //                     type: 'internal' })
+
+      }
+    });
+    ctx.drawImage(canvas, 0, 0)
+  }
+
+//This is the origninal working code
+    // const Project = getProject()
+    // for (let e=0; e < Project.midiEvents.length; e++) {
+    //   const midiEvent = Project.midiEvents[e]
+    //
+    //   if (midiEvent.tick > currentTick) continue
+    //   if (midiEvent.name !== 'Note on') continue
+    //   if (!midiEvent.programs.length) continue
+    //
+    //   midiEvent.programs.forEach((program) => {
+    //     const end = program.params.length + midiEvent.tick
+    //     if (currentTick > end) return
+    //     //console.log(program.params);
+    //     const delta = currentTick - midiEvent.tick
+    //     const cnvs = ProgramWrapper.run(program.name, {
+    //       canvasHeight: canvas.height,
+    //       canvasWidth: canvas.width,
+    //       delta,
+    //       ...program.params
+    //     })
+    //
+    //     const columns = getColumns({ delta, ...program.columnParams, ...program.params })
+    //     if (!columns.length) return ctx.drawImage(cnvs, 0, 0)
+    //     renderColumns({ cnvs, ctx, columns })
+    //
+    //   })
+    // }
 
     let images = {}
     for (let i = 0; i < config.totalColumns; i++) {
       images[i] = ctx.getImageData(i * columnWidth, 0, columnWidth, canvas.height)
     }
+
     ipc.send('render', { images })
+    //ipc.send('render', { images })
     ipc.send('video', { imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) })
 
     if (player.isPlaying()) setImmediate(animate)
   }
 
   player.on('playing', (tick) => currentTick = tick.tick)
-
   player.play()
   if (audio) audio.play()
   document.querySelector('#play').innerHTML = 'Reset'
@@ -214,7 +308,7 @@ const exportVideo = (outputPath) => {
         if (f > end) return
 
         const delta = f - midiEvent.tick
-        const cnvs = Programs.run(program.name, {
+        const cnvs = ProgramWrapper.run(program.name, {
           canvasHeight: canvas.height,
           canvasWidth: canvas.width,
           delta,
@@ -308,10 +402,12 @@ const loadJSON = () => {
         const player = getPlayer()
         player.tracks[0].events = Project.midiEvents
         player.events[0] = Project.midiEvents
+        console.log('three')
         renderApp()
+
       })
 
-      if (Project.programs.length) Programs.load(Project.programs)
+      if (Project.programs.length) ProgramWrapper.load(Project.programs)
     }
   })
 }
@@ -329,7 +425,7 @@ const showProgramDialog = () => {
       const file = files[0]
       const Project = getProject()
       Project.programs.push(file)
-      Programs.load(Project.programs)
+      ProgramWrapper.load(Project.programs)
     }
   })
 }

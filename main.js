@@ -67,8 +67,8 @@ function createWindows () {
 function createVideoWindow () {
   // Create the browser window.
   videoWindow = new BrowserWindow({
-    width: 640,
-    height: 360,
+    width: 512,
+    height: 512,
     resizable: false,
     webPreferences: {
       nodeIntegration: true

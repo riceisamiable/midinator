@@ -26,7 +26,7 @@ const loadImage = async (imgpath) => {
   })
 }
 
-class Program {
+class ImportedProgram {
   constructor(filepath) {
     this.filepath = filepath
     this.filename = path.basename(filepath)
@@ -39,7 +39,7 @@ class Program {
         if (err) return reject(err)
 
         this.totalFrames = data.streams[0].nb_frames
-        console.log(`Loading program with ${this.totalFrames} frames`)
+        console.log(`Loading Imported program with ${this.totalFrames} frames`)
 
         //ffmpeg -i video.webm -vf "select=eq(pict_type\,I)" -vsync vfr thumb%04d.jpg -hide_banner
         const outputPath = path.resolve(__dirname, `../frames/${this.filename}-%05d.png`)
@@ -56,7 +56,7 @@ class Program {
               const img = await loadImage(imgpath)
               this.images.push(img)
             }
-            console.log('Program loaded!')
+            console.log('ImportedProgram loaded!')
             resolve()
           })
           .on('error', (err, stdout, stderr) => {
@@ -76,18 +76,28 @@ class Program {
     ease = ease || EASE_DEFAULT
     reverse = reverse || REVERSE_DEFAULT
 
+    console.log('delta: '+delta)
+    console.log('length: '+length)
+    console.log('total frames: '+ this.totalFrames)
+
     const easeFn = eases[ease]
     const t = delta / length
+    console.log('t:'+ t)
+
     let easeValue = easeFn(t)
     if (reverse) easeValue = 1 - easeValue
-
+    console.log('Ease Value: '+ easeValue)
     let frame = Math.floor(easeValue * this.totalFrames)
+    console.log('Frame: '+ frame)
     const img = this.images[frame]
+    console.log(img)
+
     if (!img) return canvas
 
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
     return canvas
   }
+
 
   renderParams({ params, parent }) {
     const reverseInput = document.createElement('input')
@@ -100,4 +110,4 @@ class Program {
   }
 }
 
-module.exports = Program
+module.exports = ImportedProgram

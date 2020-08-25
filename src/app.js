@@ -3,7 +3,7 @@ const Pickr = require('@simonwep/pickr')
 const prompt = require('electron-prompt')
 const ipc = require('electron').ipcRenderer
 
-const Programs = require('./programs')
+const ProgramWrapper = require('./programs')
 const {
   getMidiEvent,
   renderInput,
@@ -159,7 +159,7 @@ const drawProgramList = ({ programs, mismatch }) => {
       programParamElem.appendChild(paramsListElem)
 
       const programTypeSelect = document.createElement('select')
-      Programs.list().forEach((name) => {
+      ProgramWrapper.list().forEach((name) => {
         const option = document.createElement('option')
         option.text = name
         programTypeSelect.add(option)
@@ -210,7 +210,7 @@ const drawProgramList = ({ programs, mismatch }) => {
         }
       })
 
-      Programs.renderParams(p.name, {
+      ProgramWrapper.renderParams(p.name, {
         params: p.params,
         parent: paramsListElem,
         title: p.title
@@ -231,7 +231,7 @@ const drawProgramList = ({ programs, mismatch }) => {
         else delta += 1
 
         canvas.width = canvas.width
-        const cnvs = Programs.run(p.name, { canvasHeight: config.videoHeight, canvasWidth: config.videoWidth, delta, ...p.params })
+        const cnvs = ProgramWrapper.run(p.name, { canvasHeight: config.videoHeight, canvasWidth: config.videoWidth, delta, ...p.params })
         const columnWidth = config.videoWidth / config.totalColumns
         ctx.drawImage(
           cnvs, 0, 0, columnWidth, config.videoHeight,
@@ -262,7 +262,7 @@ const drawProgramList = ({ programs, mismatch }) => {
   addProgramElem.className = 'program-item'
   addProgramElem.innerHTML = 'Add Program'
   addProgramElem.addEventListener('click', () => {
-    const firstProgram = Programs.list()[0]
+    const firstProgram = ProgramWrapper.list()[0]
     if (!programs.length) {
       selectedNotes.forEach((note) => {
         const elem = getNoteElem(note.tick)
@@ -508,6 +508,10 @@ const renderApp = () => {
     midiEvent.programs = midiEvent.programs || []
     drawNote(midiEvent)
   })
+
+  //preRender()
+
+
 }
 
 const setPosition = (measure = selectedMeasure) => {

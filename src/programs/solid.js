@@ -1,5 +1,5 @@
 const { renderParam } = require('../utils')
-const { noiseEffect } = require('../effects')
+const { noiseEffect, noiseEffect2 } = require('../effects')
 const Param = require('../param')
 const config = require('../../config')
 
@@ -35,6 +35,7 @@ const run = ({
 
   const opacityParam = new Param(opacity)
   const opacityValue = opacityParam.getValue(t)
+
 
   const noiseParam = new Param(noise)
   const noiseValue = noiseParam.getValue(t)
@@ -124,7 +125,72 @@ const renderParams = ({ params, parent, title }) => {
   })
 }
 
+//This is the function that Pre Renders the data
+const runTest = ({
+  delta,
+  length,
+  color,
+  y,
+  height,
+  canvasWidth,
+  canvasHeight,
+  noise,
+  opacity
+},
+{type, manualSelections}
+) => {
+
+  let frameData = {}
+  canvas.width = canvasWidth
+  canvas.height = canvasHeight
+
+  color = color || COLOR_DEFAULT
+
+  const t = delta / length
+
+  const heightParam = new Param(height)
+  const heightValue = heightParam.getValue(t)
+  frameData.heightValue = heightValue
+
+  const yParam = new Param(y)
+  const yValue = yParam.getValue(t)
+  frameData.yValue = yValue
+
+  const opacityParam = new Param(opacity)
+  const opacityValue = opacityParam.getValue(t)
+  frameData.opacityValue = opacityValue
+
+  const noiseParam = new Param(noise)
+  const noiseValue = noiseParam.getValue(t)
+  frameData.noiseValue = noiseValue
+
+  //ctx.fillStyle = color.replace(/[^\,)]+\)/, `${opacityValue})`)
+  frameData.columntype = type
+  frameData.manualSelections = {}
+  frameData.canvasWidth = canvasWidth
+  frameData.canvasHeight = canvasHeight
+  frameData.color = color.replace(/[^\,)]+\)/, `${opacityValue})`)
+  frameData.rect = [0, yValue, canvasWidth, heightValue]
+  // if (noiseValue) {
+  //   noiseEffect({
+  //     ctx,
+  //     startY: yValue,
+  //     totalHeight: canvas.height,
+  //     width: canvas.width,
+  //     height: heightValue,
+  //     noise: noiseValue
+  //   })
+  //   return frameData
+  // }
+  //
+  // ctx.fillRect(0, yValue, canvasWidth, heightValue)
+  // return canvas
+  return frameData
+}
+
+
 module.exports = {
   renderParams,
-  run
+  run,
+  runTest
 }

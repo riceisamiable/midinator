@@ -1,5 +1,6 @@
 const config = require('../config')
 
+
 const convertCoordsToColumn = (x, y) => {
   const rows = config.totalColumns / config.columnWidth
   let row = y % rows
@@ -89,6 +90,8 @@ const renderColumnParams = ({ programParamElem, program }) => {
   const columnInputs = document.createElement('div')
   columnInputs.className = 'column-container'
 
+
+
   let delta = 0
   const animate = () => {
     if (programParamElem.parentNode) window.requestAnimationFrame(animate)
@@ -108,11 +111,24 @@ const renderColumnParams = ({ programParamElem, program }) => {
 
   window.requestAnimationFrame(animate)
 
+var isClick = false;
+
   for (let i=1; i < (config.totalColumns + 1); i++) {
     const columnInput = document.createElement('div')
     columnInput.className = 'column'
 
+    columnInput.addEventListener('mousedown', (event) => {
+      isClick = true;
+    })
+
+    columnInput.addEventListener('mouseup', (event) => {
+      isClick = false;
+    })
+
     columnInput.addEventListener('mouseover', (event) => {
+
+      if(!isClick) return;
+
       if (columnParams.type !== 'manual') return event.stopPropagation()
       if (columnParams.manualSelections[i]) {
         delete columnParams.manualSelections[i]
@@ -123,6 +139,8 @@ const renderColumnParams = ({ programParamElem, program }) => {
       }
     })
     columnInputs.appendChild(columnInput)
+
+
   }
 
   const clearColumnsButton = document.createElement('button')
