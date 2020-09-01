@@ -100,8 +100,9 @@ class ImportedProgram {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
     return canvas
   }
-
-  runTest({ delta, length, ease, reverse, canvasWidth, canvasHeight },{type, manualSelections}) {
+//------------------------------------------------------------------------
+// Function to Pass the Imported Program Paths into the Pre Render Data file
+  preRender({ delta, length, ease, reverse, canvasWidth, canvasHeight },{type, manualSelections}) {
     let frameData = {}
     canvas.width = canvasWidth
     canvas.height = canvasHeight
@@ -139,7 +140,7 @@ class ImportedProgram {
     //ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
     //return canvas
   }
-
+//-------------------------------------------------------------------
 
 
 

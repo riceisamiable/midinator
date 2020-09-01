@@ -4,13 +4,17 @@
     <title>Render</title>
     <script src='dist/Three.js'></script>
     <script src='dist/OrbitControls.js'></script>
-    <script type='Module'>import { SelectionBox } from './dist/SelectionBox.js';
-                          import { SelectionHelper } from './dist/SelectionHelper.js';
-  </script>
+    <script src='dist/SelectionBox.js'></script>
+    <script src='dist/SelectionHelper.js'></script>
     <style>
      body {
          margin: 0;
      }
+     .selectBox {
+				border: 1px solid #55aaff;
+				background-color: rgba(75, 160, 255, 0.3);
+				position: fixed;
+			}
     </style>
   </head>
   <body>

@@ -1,6 +1,6 @@
-import {
-	Vector2
-} from "./three.module.js";
+// import {
+// 	Vector2
+// } from "./three.module.js";
 
 var SelectionHelper = ( function () {
 
@@ -12,9 +12,9 @@ var SelectionHelper = ( function () {
 
 		this.renderer = renderer;
 
-		this.startPoint = new Vector2();
-		this.pointTopLeft = new Vector2();
-		this.pointBottomRight = new Vector2();
+		this.startPoint = new THREE.Vector2();
+		this.pointTopLeft = new THREE.Vector2();
+		this.pointBottomRight = new THREE.Vector2();
 
 		this.isDown = false;
 
@@ -82,4 +82,4 @@ var SelectionHelper = ( function () {
 
 } )();
 
-export { SelectionHelper };
+//export { SelectionHelper };

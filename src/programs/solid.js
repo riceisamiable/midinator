@@ -124,9 +124,9 @@ const renderParams = ({ params, parent, title }) => {
     parent
   })
 }
-
-//This is the function that Pre Renders the data
-const runTest = ({
+//----------------- Function to PreRender Data ----------------------------------
+// Currently It does not Pre Render the 'Noise' parameter
+const preRender = ({
   delta,
   length,
   color,
@@ -145,6 +145,7 @@ const runTest = ({
   canvas.height = canvasHeight
 
   color = color || COLOR_DEFAULT
+
 
   const t = delta / length
 
@@ -166,10 +167,14 @@ const runTest = ({
 
   //ctx.fillStyle = color.replace(/[^\,)]+\)/, `${opacityValue})`)
   frameData.columntype = type
-  frameData.manualSelections = {}
+  //Convert Column Keys to numbers
+  frameData.manualSelections = Object.keys(manualSelections).map(numStr => parseInt(numStr))
   frameData.canvasWidth = canvasWidth
   frameData.canvasHeight = canvasHeight
   frameData.color = color.replace(/[^\,)]+\)/, `${opacityValue})`)
+  frameData.colorThree = color.replace(/(,)[^,]*$[^,]*$/, ')')
+
+  //console.log(frameData.color)
   frameData.rect = [0, yValue, canvasWidth, heightValue]
   // if (noiseValue) {
   //   noiseEffect({
@@ -187,10 +192,10 @@ const runTest = ({
   // return canvas
   return frameData
 }
-
+//----------------------------------------------------------------------
 
 module.exports = {
   renderParams,
   run,
-  runTest
+  preRender
 }

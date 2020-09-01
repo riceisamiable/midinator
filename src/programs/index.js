@@ -13,8 +13,8 @@ ProgramWrapper.run = function (name, params) {
   return this._index[name].run(params)
 }
 
-ProgramWrapper.runTest = function (name, params, columns) {
-  return this._index[name].runTest(params, columns)
+ProgramWrapper.preRender = function (name, params, columns) {
+  return this._index[name].preRender(params, columns)
 }
 
 ProgramWrapper.renderParams = function(name, params) {

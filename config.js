@@ -1,6 +1,6 @@
 module.exports = {
-  videoWidth: 512,
-  videoHeight: 512,
+  videoWidth: 360,
+  videoHeight: 360,
   totalColumns: 16,
   columnWidth: 4,
   ledHeight: 72

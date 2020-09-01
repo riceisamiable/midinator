@@ -80,6 +80,8 @@ const renderInput = ({
     programParamContainer.appendChild(input)
   } else if (manual) {
     inputElem = document.createElement('input')
+    console.log('heeerrrree')
+    console.log(value)
     inputElem.value = value
     inputElem.oninput = () => {
       oninput(inputElem.value)

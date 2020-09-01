@@ -1,5 +1,33 @@
-  const ipc = require('electron').ipcRenderer
+const ipc = require('electron').ipcRenderer
 const config = require('./config')
+
+const canvas = document.createElement('canvas')
+const ctx = canvas.getContext('2d')
+
+/* ------------------------------------
+BoxGeometry Vertices Notes:
+
+  Top Vertices in array are: 0,1 4,5
+  Bottom Vertices in array are: 2,3,6,7
+-------------------------------------*/
+/* ----------------------------------
+BoxBufferGeometry Vertices Notes: (Each face of a side is made up of 2 triangles)
+
+  All Top Vertices: [0,1,4,5,8,9,10,11,16,17,20,21]
+  All Bottom Vertices: [2,3,6,7,12,13,14,15,18,19,22,23]
+    Front Side: [Top: 0,1 Bottom: 2,3]
+    Back Side: [Top: 4,5 Bottom: 6,7]
+    Left Side: [Top: 16,17 Bottom: 18,19]
+    Right Side: [Top: 20,21 Bottom: 22,23]
+    Top Side: [All Four: 8,9,10,11]
+    Bottom Side: [All Four: 12,13,14,15]
+---------------------------------------*/
+/*Notes:
+HTML Canvas sets its x,y origin (0,0) in the top left corner. Coming down from the top.
+Changing the Vertex positions in Three JS makes the change relative to the center of itself (the box object).
+This means that Y value appled to each vertex needs to be split in half.
+
+---------------------------*/
 
 
 
@@ -13,6 +41,7 @@ let controls
 let circle
 let circles = {}
 let raycaster
+let counter = 0
 
 let materials = {}
 let textures = {}
@@ -22,7 +51,6 @@ let defaultMaterial = new THREE.MeshBasicMaterial({ map: defaultTexture } )
 let mouseon = false
 //let shineyMaterial = new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) //{ map: defaultTexture }
 
-
 const singleColumnWidth = 10
 const colHeight = 100
 const colRowCount = 4
@@ -31,13 +59,18 @@ const colSpacing = singleColumnWidth * 10
 const roomWidth = (colSpacing + singleColumnWidth) * colRowCount
 const roomDepth = (colSpacing + singleColumnWidth) * colDepthCount
 const imageColumnWidth = 40
+const topVertices = [0,1,4,5,8,9,10,11,16,17,20,21]
+const bottomVertices = [2,3,6,7,12,13,14,15,18,19,22,23]
+let columnId = []
+let columnCoords = []
 
 //This count is for drawing lines
 let count = 0
-
-
-
-//Utility Functions
+// For interacting with objects with mouse
+let mouse = new THREE.Vector2(), INTERSECTED;
+let radius = 100, theta = 0;
+//-----------------------------------------------------------------
+//--------------------- Utility Functions --------------------------
 
 function distance (x1, y1, x2, y2){
   let xDistance = x2 - x1;
@@ -49,16 +82,15 @@ function distance (x1, y1, x2, y2){
 
 console.log(process.pid);
 
-let mouse = new THREE.Vector2(), INTERSECTED;
-let radius = 100, theta = 0;
+
 
 function setup () {
   scene = new THREE.Scene()
   // Background
   scene.background = new THREE.Color(0xf0f0f0) //0x000000
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 2, 1000)
-  camera.position.z = roomDepth
-  camera.position.x = roomWidth
+  camera.position.z = roomDepth + 200
+  camera.position.x = roomWidth -250
   camera.position.y = colHeight * 2
   renderer = new THREE.WebGLRenderer()
 
@@ -75,7 +107,9 @@ function setup () {
   loader = new THREE.TextureLoader()
   controls = new THREE.OrbitControls(camera, renderer.domElement)
 
-  geometry = new THREE.BoxGeometry(singleColumnWidth, colHeight, singleColumnWidth)
+
+  // Subtract on
+  solidGeometry = new THREE.BoxBufferGeometry(singleColumnWidth - 1, colHeight+ 1, singleColumnWidth - 1)
 
 //For Lights
   renderer.shadowMap.enabled = true;
@@ -83,7 +117,7 @@ function setup () {
   renderer.gammaInput = true;
 	renderer.gammaOutput = true;
 //For Lights
-  var spotLight = new THREE.SpotLight( 0xFFffff, 1.0 );
+  let spotLight = new THREE.SpotLight( 0xFFffff, 1.0 );
       spotLight.position.set( 400, 200, 400 );
       spotLight.castShadow = true;
       spotLight.angle = 0.70;
@@ -105,35 +139,11 @@ function setup () {
       //var helper = new THREE.CameraHelper( spotLight.shadow.camera );
       //scene.add( helper );
 
-  //For testing animation groups -- Not Working
-    //let  animationGroup = new THREE.AnimationObjectGroup();
-
-  /*for (let i = 0; i < 16; i++) {
-      var criclex = Math.random() * 300;
-      var criclez = Math.random() * 300;
+    //For testing animation groups -- Not Working
+      //let  animationGroup = new THREE.AnimationObjectGroup();
 
 
-      var circleGeo = new THREE.PlaneGeometry( 5, 20, 32 );
-      var circleMat = new THREE.MeshBasicMaterial( { color: 0xff0090 } );
-      circle = new THREE.Mesh( circleGeo, circleMat );
-      circle.rotation.x = -Math.PI / 2;
-      circle.position.x = criclex;
-      circle.position.z = criclez;
-      circle.position.y = -40;
-
-      circles[i] = circle;
-
-      //console.log(circles[i])
-      //circles.push( new ci)
-
-      scene.add( circle )
-
-    }*/
-
-
-
-
-   // Add ground for light to shine on
+    //Add ground for light to shine on
       // var groundGeo = new THREE.PlaneBufferGeometry(10000, 10000);
       // var groundMat = new THREE.MeshPhongMaterial({
       // color : 0xffffff,
@@ -144,243 +154,333 @@ function setup () {
       // ground.receiveShadow = true;
       // scene.add(ground);
 
+  //--------------------- Create Column Objects ------------------------------
+    //Create 16 Columns Start
+      for (let i = 0; i < 16; i++) {
+        const z = Math.floor(i / 4)
+        const x = i % 4
+        const xValue = Math.round(x * colSpacing)
+        const zValue = Math.round(z * colSpacing)
 
+        geometry = new THREE.BoxBufferGeometry(singleColumnWidth, colHeight, singleColumnWidth)
+      // --------- Invisible Columns ----------
+        // materials[i] = new THREE.MeshBasicMaterial({ map: defaultTexture })
+        // materials[i].transparent = true
+        // // Transparent Objects are invisible columns that receive the canvas images as a texture.
+        // const transparentObject = new THREE.Mesh( geometry,   [materials[i], // Left side
+        //                                                       materials[i], // Right side
+        //                                                       defaultMaterial, // Top side
+        //                                                       defaultMaterial, // Bottom side
+        //                                                       materials[i], // Front side
+        //                                                       materials[i] // Back side
+        //                                                       ])
+        // transparentObject.position.set(xValue, 0, zValue)
+        //
+        // //Rotate columns on Y axis
+        // if( z % 2 === 0  ){
+        //   if (i % 2=== 0){
+        //     transparentObject.rotation.y = Math.PI / 4;
+        //   }
+        // } else {
+        //   if(i % 2 === 1){
+        //     transparentObject.rotation.y = Math.PI / 4;
+        //   }
+        // }
+        // scene.add(transparentObject)
+    // ----------------------------------------
+
+    // --------- Visible Columns --------------
+      //Adds "visible columns"
+      //This creates makes a "different" geometry for each column.
+          // const regularObject = new THREE.Mesh( new THREE.BoxBufferGeometry(singleColumnWidth, colHeight, singleColumnWidth), new THREE.MeshLambertMaterial( { color: 0xC0C0C0 } ))
+
+       const regularObject = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xC0C0C0, opacity: 1, transparent: true, } ))
+       if (i === 0 ){
+         console.log('Reg id: '+regularObject.id)
+       }
+       console.log(regularObject)
+        //const regularObject = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xC0C0C0 } ))
+
+        regularObject.position.set(xValue, 50, zValue)
+
+        columnId.push(regularObject.id)
+
+      //Rotate columns on Y axis
+        if( z % 2 === 0  ){
+          if (i % 2=== 0){
+            regularObject.rotation.y = Math.PI / 4;
+          }
+        } else {
+          if(i % 2 === 1){
+            regularObject.rotation.y = Math.PI / 4;
+          }
+        }
+
+        regularObject.type = 'Interact'
+
+        scene.add(regularObject)
+      // ---------------------------------------
+
+
+
+
+        //animationGroup.add( regularObject );
+
+      // Add Floor Squares
+        // var squareGeo = new THREE.PlaneGeometry( 50, 50, 32 );
+        // var squareMat = new THREE.MeshBasicMaterial( { color: 0xff0090 } );
+        // square = new THREE.Mesh( squareGeo, squareMat );
+        // square.rotation.x = -Math.PI / 2;
+        // square.position.x = xValue;
+        // square.position.z = zValue;
+        // square.position.y = -49;
+        // scene.add( square )
+      }
+  //---------------------- End Create Column Objects----------------------------------------------
+
+  //----------------------------- Create Base Columns that do not change ------------------
   for (let i = 0; i < 16; i++) {
     const z = Math.floor(i / 4)
     const x = i % 4
     const xValue = Math.round(x * colSpacing)
     const zValue = Math.round(z * colSpacing)
 
-    materials[i] = new THREE.MeshBasicMaterial({ map: defaultTexture })
-    materials[i].transparent = true
-    const transparentObject = new THREE.Mesh( geometry, [
-      materials[i], // Left side
-      materials[i], // Right side
-      defaultMaterial, // Top side
-      defaultMaterial, // Bottom side
-      materials[i], // Front side
-      materials[i] // Back side
-    ])
-    transparentObject.position.set(xValue, 0, zValue)
+    const solidColumn = new THREE.Mesh( solidGeometry, new THREE.MeshLambertMaterial({ color: 0xC0C0C0 }))
 
-  //Rotate columns on Y axis
-  if( z % 2 === 0  ){
-    if (i % 2=== 0){
-      transparentObject.rotation.y = Math.PI / 4;
+    // const regularObject = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xC0C0C0 } ))
+
+   solidColumn.position.set(xValue, 50, zValue)
+
+ //Rotate columns on Y axis
+   if( z % 2 === 0  ){
+     if (i % 2=== 0){
+       solidColumn.rotation.y = Math.PI / 4;
+     }
+   } else {
+     if(i % 2 === 1){
+       solidColumn.rotation.y = Math.PI / 4;
+     }
+   }
+
+
+   scene.add(solidColumn)
   }
-} else {
-  if(i % 2 === 1){
-    transparentObject.rotation.y = Math.PI / 4;
-  }
+//-----------------------------------------------------------------------------------
+
+  //For Animation Groups and Clips -- Not Working
+    // let xAxis = new THREE.Vector3( 1, 0, 0 );
+  	// let qInitial = new THREE.Quaternion().setFromAxisAngle( xAxis, 0 );
+  	// let qFinal = new THREE.Quaternion().setFromAxisAngle( xAxis, Math.PI );
+  	// let quaternionKF = new THREE.QuaternionKeyframeTrack( '.quaternion', [ 0, 1, 2 ], [ qInitial.x, qInitial.y, qInitial.z, qInitial.w, qFinal.x, qFinal.y, qFinal.z, qFinal.w, qInitial.x, qInitial.y, qInitial.z, qInitial.w ] );
+    //
+  	// let colorKF = new THREE.ColorKeyframeTrack( '.material.color', [ 0, 1, 2 ], [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ], THREE.InterpolateDiscrete );
+  	// let opacityKF = new THREE.NumberKeyframeTrack( '.material.opacity', [ 0, 1, 2 ], [ 1, 0, 1 ] );
+    //
+  	// // create clip
+    //
+  	// let clip = new THREE.AnimationClip( 'default', 3, [ quaternionKF, colorKF, opacityKF ] );
+    //
+  	// // apply the animation group to the mixer as the root object
+    //
+  	// mixer = new THREE.AnimationMixer( animationGroup );
+    // console.log(mixer)
+    //
+  	// let clipAction = mixer.clipAction( clip );
+
+  //----------------------------------------------------------------------------
+
+  //For Drawing line
+    let MAX_POINTS = 500;
+    positions = new Float32Array(MAX_POINTS * 3);
+    let lineGeometry = new THREE.BufferGeometry();
+    lineGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    let lineMaterial = new THREE.LineBasicMaterial({
+        color: 0xff0000,
+        linewidth: 1
+      });
+
+      line = new THREE.Line(lineGeometry, lineMaterial);
+     scene.add( line );
+  //----------------------------------------------------------------------------
+
+
+  //This is for Detectig Where mouse is, and if it is intersecting with any objects
+    raycaster = new THREE.Raycaster();
+    console.log(columnId)
+    console.log(columnId[0])
+    let bob = scene.getObjectById(columnId[0])
+    console.log(bob)
+ //For Highlighting when mouse over
+    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+ //This is for adding a line between columns when clicking on them.
+    document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+
+  //----------------------------------------------------------------------------
+    window.addEventListener( 'resize', onWindowResize, false );
+
+    //clock = new THREE.Clock;
+    document.body.appendChild(renderer.domElement)
+    console.log(scene)
 }
-
-    scene.add(transparentObject)
-
-
-  //   //Adds "visible columns"
-
-    const regularObject = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xC0C0C0 } ))
-    regularObject.position.set(xValue, 0, zValue)
-
-    //console.log(z % 2  );
-
-    if( z % 2 === 0  ){
-      if (i % 2=== 0){
-        regularObject.rotation.y = Math.PI / 4;
-    }
-  } else {
-    if(i % 2 === 1){
-      regularObject.rotation.y = Math.PI / 4;
-    }
-  }
-    //}
-    regularObject.type = 'Interact'
-
-    //console.log(materials[i])
-    //console.log(regularObject)
-    //console.log(regularObject)
-
-    scene.add(regularObject)
-
-    //animationGroup.add( regularObject );
-
-
-  // Add Floor Squares
-    // var squareGeo = new THREE.PlaneGeometry( 50, 50, 32 );
-    // var squareMat = new THREE.MeshBasicMaterial( { color: 0xff0090 } );
-    // square = new THREE.Mesh( squareGeo, squareMat );
-    // square.rotation.x = -Math.PI / 2;
-    // square.position.x = xValue;
-    // square.position.z = zValue;
-    // square.position.y = -49;
-    // scene.add( square )
-  }
-
-
-//For Animation Groups and Clips -- Not Working
-  // let xAxis = new THREE.Vector3( 1, 0, 0 );
-	// let qInitial = new THREE.Quaternion().setFromAxisAngle( xAxis, 0 );
-	// let qFinal = new THREE.Quaternion().setFromAxisAngle( xAxis, Math.PI );
-	// let quaternionKF = new THREE.QuaternionKeyframeTrack( '.quaternion', [ 0, 1, 2 ], [ qInitial.x, qInitial.y, qInitial.z, qInitial.w, qFinal.x, qFinal.y, qFinal.z, qFinal.w, qInitial.x, qInitial.y, qInitial.z, qInitial.w ] );
-  //
-	// let colorKF = new THREE.ColorKeyframeTrack( '.material.color', [ 0, 1, 2 ], [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ], THREE.InterpolateDiscrete );
-	// let opacityKF = new THREE.NumberKeyframeTrack( '.material.opacity', [ 0, 1, 2 ], [ 1, 0, 1 ] );
-  //
-	// // create clip
-  //
-	// let clip = new THREE.AnimationClip( 'default', 3, [ quaternionKF, colorKF, opacityKF ] );
-  //
-	// // apply the animation group to the mixer as the root object
-  //
-	// mixer = new THREE.AnimationMixer( animationGroup );
-  // console.log(mixer)
-  //
-	// let clipAction = mixer.clipAction( clip );
-
-
-//Box Verticies Notes:
-// Top Verticies in array are: 0,1 4,5
-// Bottom Verticies in array are: 2,3,6,7
-
-//For Drawing line
-let MAX_POINTS = 500;
-positions = new Float32Array(MAX_POINTS * 3);
-let lineGeometry = new THREE.BufferGeometry();
-lineGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-let lineMaterial = new THREE.LineBasicMaterial({
-    color: 0xff0000,
-    linewidth: 1
-  });
-
-  line = new THREE.Line(lineGeometry, lineMaterial);
- scene.add( line );
-
-
-// let linematerial = new THREE.LineBasicMaterial({
-// 	color: 0x0000ff,
-//   linewidth: 10
-// });
-//
-// var points = [];
-// points.push( new THREE.Vector3( 300, 0, 300 ) );
-// points.push( new THREE.Vector3( 300, 0, 200 ) );
-//
-// var linegeometry = new LineGeometry();
-// linegeometry.setPositions( points );
-//
-// var bop = new Line2 ( linegeometry, linematerial );
-// scene.add( bop );
-
-
-//For Detectig Where mouse is
-  raycaster = new THREE.Raycaster();
-  document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-  document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-  window.addEventListener( 'resize', onWindowResize, false );
-
-  clock = new THREE.Clock;
-
-  document.body.appendChild(renderer.domElement)
-}
+//-------------------- End Setup ------------------------------------------------
 
 function draw () {
   requestAnimationFrame(draw)
   render();
+  // This is for turning on the orbit controls
   controls.update()
-  renderer.render(scene, camera)
 
+  renderer.render(scene, camera)
   //console.log(scene)
 
 }
 
-
-
-
 function render(){
+      //Attempting to use the Animation Groups and Clips
+        // var delta = clock.getDelta();
+        //
+        //     if ( mixer ) {
+        //
+        //       mixer.update( delta );
+        //       console.log(mixer)
+        //
+        //     }
 
-//Attempting to use the Animation Groups and Clips
-  // var delta = clock.getDelta();
-  //
-  //     if ( mixer ) {
-  //
-  //       mixer.update( delta );
-  //       console.log(mixer)
-  //
-  //     }
-
-
-  raycaster.setFromCamera( mouse, camera );
-
-  var intersects = raycaster.intersectObjects( scene.children );
-  //console.log(intersects)
-
-  if ( intersects.length > 0 ) {
-
-
-
-    mouseon = true
-    //console.log(mouseon)
-    //console.log(raycaster)
-        let obj = intersects[interactWithit(intersects)]
-        //console.log(obj.object.position)
-
-					if ( INTERSECTED != obj.object ) {
-
-						if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-						INTERSECTED = obj.object;
-						INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-						INTERSECTED.material.emissive.setHex( 0xff0000 );
-
-					}
-
-				} else {
-
-					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-					INTERSECTED = null;
-          mouseon = false
-          //console.log(mouseon)
-				}
-
-
-//Circles
-  // for (let i = 0; i < 16; i++ ){
-  //   console.log(circles[i].position.x)
-  //
-  //   circles[i].position.x = circles[i].position.x + 1;
-  //   circles[i].position.z = circles[i].position.z + 1;
-  //  }
-
+      //------------------ Ray Caster For Intersecting with Objects -----------------------------
+        // raycaster.setFromCamera( mouse, camera );
+        //
+        // var intersects = raycaster.intersectObjects( scene.children );
+        // //console.log(intersects)
+        //
+        // if ( intersects.length > 0 ) {
+        //
+        //
+        //   mouseon = true
+        //   //console.log(mouseon)
+        //   //console.log(raycaster)
+        //       let obj = intersects[interactWithit(intersects)]
+        //       //console.log(obj.object.position)
+        //       //console.log(obj)
+        //
+      	// 				if ( INTERSECTED != obj.object ) {
+        //
+      	// 					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+        //
+      	// 					INTERSECTED = obj.object;
+      	// 					INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+      	// 					INTERSECTED.material.emissive.setHex( 0xff0000 );
+        //
+      	// 				}
+        //
+      	// 			} else {
+        //
+      	// 				if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+        //
+      	// 				INTERSECTED = null;
+        //         mouseon = false
+        //         //console.log(mouseon)
+      	// 			}
+      //-----------------------------------------------------------------------------
 
 }
-
 
 setup()
 draw()
 
-ipc.on('render', (event, message) => {
-  for (let i = 0; i < 16; i++) {
-    if (textures[i]) textures[i].dispose()
-    const data = new Uint8ClampedArray(message.images[i].data)
-    const imageData = new ImageData(data, 32, config.videoHeight)
-    textures[i] = new THREE.Texture(imageData)
-    textures[i].needsUpdate = true
-    materials[i].map = textures[i]
-  }
-})
+//------------------------- Receive Data From Editor ------------------------------------
+
+// This is to receive the Rendered CANVAS images from the editor window
+// This is uesd for the Original working method.
+// ipc.on('render', (event, message) => {
+//   for (let i = 0; i < 16; i++) {
+//     if (textures[i]) textures[i].dispose()
+//     const data = new Uint8ClampedArray(message.images[i].data)
+//     const imageData = new ImageData(data, 32, config.videoHeight)
+//     textures[i] = new THREE.Texture(imageData)
+//     textures[i].needsUpdate = true
+//     materials[i].map = textures[i]
+//   }
+// })
+
+// Recevive Frame Data from the editor so it can be rendered in Threejs
+    ipc.on('render', (event, message) => {
+      //console.log(message)
+      if (message.currentFrame[0]) {
+        // Loop through all layers of frame data and make a new object for each layer
+        // Normalize the Frame data to the height of the columns in the Render window
+        // Identify which columns the animations get applied to.
+        // Determine Order of layers.
+        // Need to fix the interaction wtih ray casting.
+        // Need to figure out how /when to delete the shapes.
+        let frameData = message.currentFrame
+        let yValue = parseInt(frameData[0].yValue)
+        let heightValue = parseInt(frameData[0].heightValue)
+        let color = frameData[0].colorThree
+        let opacity = frameData[0].opacityValue
+        let columns = frameData[0].manualSelections
+        //console.log(columns)
+        //This is to change all the columns if there are no columns listen in the ManualSelections array.
+        if (!columns.length) {
+          columns = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+
+        }
+
+        for(let o = 0; o < 16; o ++){
+            let col = columnId[o]
+            //console.log(col)
+            let bob = scene.getObjectById(col)
+            bob.material.opacity = 0
+            //console.log(bob)
+        }
 
 
+        //console.log(message.manualSelections)
+        for (let p = 0; p < columns.length; p++ ){
+            let column = columns[p]
+              column =  column - 1
+              let col = columnId[column]
+              let bob = scene.getObjectById(col)
+              //console.log(bob)
+            for (let i = 0 ; i < topVertices.length; i++){
+                let topIndex = topVertices[i]
+                let bottomIndex = bottomVertices[i]
+                // The + 1 is to adjust only the Y component.
+                let top = (topIndex * 3)+1
+                let bottom = (bottomIndex *3)+1
+
+                //console.log(yValue)
+                //Change the Position of the Top and Bottom of the Columns
+                bob.geometry.attributes.position.array[top] = yValue
+                bob.geometry.attributes.position.array[bottom] = yValue -  heightValue
+                bob.geometry.attributes.position.needsUpdate = true
+
+                //Change the color of the columns.
+                bob.material.color.setStyle(color)
+                bob.material.opacity =  opacity
+                //scene.children[column].material.needsUpdate = true
+
+            }
+        //console.log(frameData)
+        }
+      }
+
+    })
+//----------------------------------------------------------------------------------------
+
+
+
+
+//------------------------------------------------------------------------------------------
 
 function onWindowResize() {
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
+}
 
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-
-				renderer.setSize( window.innerWidth, window.innerHeight );
-
-			}
-
+//----------------------- Highlight Column when Mouse Over ---------------------------------
+// For Highlight Column when Mouse Over
 function onDocumentMouseMove( event ) {
 
 	event.preventDefault();
@@ -390,6 +490,19 @@ function onDocumentMouseMove( event ) {
 
 }
 
+
+//This is a helper function to determine if the object the raycaster is intersecting should be 'Interactable'
+function interactWithit (intersects){
+  for (let i = 0; i < intersects.length; i++ ){
+    if(intersects[i].object.type === 'Interact'){
+      return i
+    }
+  }
+}
+//---------------------------------------------------------------------------------------------
+
+//------------------------- Adding Lines With Click -------------------------------------------
+// For Drawing lines between Columns when you click on them.
 function onDocumentMouseUp ( event ){
 
   event.preventDefault();
@@ -403,15 +516,7 @@ function onDocumentMouseUp ( event ){
   }
 }
 
-function interactWithit (intersects){
-  for (let i = 0; i < intersects.length; i++ ){
-    if(intersects[i].object.type === 'Interact'){
-      return i
-    }
-  }
-}
-
-
+// This is to add a point when drawing lines between columns.
 function addPoint (point){
   console.log(positions)
   if (count > 2) {
@@ -426,5 +531,58 @@ function addPoint (point){
   positions[count * 3 + 2] = point.z;
   count++
   line.geometry.setDrawRange(0, count);
-
 }
+//---------------------------------------------------------------------------------------
+
+//---------------- Mouse Selection Box --------------------------------------------------
+// let selectionBox = new SelectionBox( camera, scene );
+// let helper = new SelectionHelper( selectionBox, renderer, 'selectBox' );
+//
+// // This is for the Selection Box
+// document.addEventListener( 'mousedown', function ( event ) {
+//   controls.enabled = false
+//
+// 	for ( var item of selectionBox.collection ) {
+// 		item.material.emissive.set( 0x000000 );
+// 	}
+//
+// 	selectionBox.startPoint.set(
+// 		( event.clientX / window.innerWidth ) * 2 - 1,
+// 		- ( event.clientY / window.innerHeight ) * 2 + 1,
+// 		0.5 );
+// });
+//
+// document.addEventListener( 'mousemove', function ( event ) {
+// 	if ( helper.isDown ) {
+// 		for ( var i = 0; i < selectionBox.collection.length; i ++ ) {
+// 			selectionBox.collection[ i ].material.emissive.set( 0x000000 );
+// 		}
+//
+// 		selectionBox.endPoint.set(
+// 			( event.clientX / window.innerWidth ) * 2 - 1,
+// 			- ( event.clientY / window.innerHeight ) * 2 + 1,
+// 			0.5 );
+//
+// 		var allSelected = selectionBox.select();
+//
+// 		for ( var i = 0; i < allSelected.length; i ++ ) {
+// 			allSelected[ i ].material.emissive.set( 0xff0000 );
+// 		}
+// 	}
+// });
+//
+// document.addEventListener( 'mouseup', function ( event ) {
+//   controls.enabled = true
+//
+// 	selectionBox.endPoint.set(
+// 		( event.clientX / window.innerWidth ) * 2 - 1,
+// 		- ( event.clientY / window.innerHeight ) * 2 + 1,
+// 		0.5 );
+//
+// 	var allSelected = selectionBox.select();
+//
+// 	for ( var i = 0; i < allSelected.length; i ++ ) {
+// 		allSelected[ i ].material.emissive.set( 0xff0000 );
+// 	}
+// });
+//-------------------------------------------------------------------

@@ -1,39 +1,39 @@
-import {
-	Frustum,
-	Vector3
-} from "./three.module.js";
+// import {
+// 	Frustum,
+// 	Vector3
+// } from "./three.module.js";
 /**
  * This is a class to check whether objects are in a selection area in 3D space
  */
 
 var SelectionBox = ( function () {
 
-	var frustum = new Frustum();
-	var center = new Vector3();
+	var frustum = new THREE.Frustum();
+	var center = new THREE.Vector3();
 
-	var tmpPoint = new Vector3();
+	var tmpPoint = new THREE.Vector3();
 
-	var vecNear = new Vector3();
-	var vecTopLeft = new Vector3();
-	var vecTopRight = new Vector3();
-	var vecDownRight = new Vector3();
-	var vecDownLeft = new Vector3();
+	var vecNear = new THREE.Vector3();
+	var vecTopLeft = new THREE.Vector3();
+	var vecTopRight = new THREE.Vector3();
+	var vecDownRight = new THREE.Vector3();
+	var vecDownLeft = new THREE.Vector3();
 
-	var vecFarTopLeft = new Vector3();
-	var vecFarTopRight = new Vector3();
-	var vecFarDownRight = new Vector3();
-	var vecFarDownLeft = new Vector3();
+	var vecFarTopLeft = new THREE.Vector3();
+	var vecFarTopRight = new THREE.Vector3();
+	var vecFarDownRight = new THREE.Vector3();
+	var vecFarDownLeft = new THREE.Vector3();
 
-	var vectemp1 = new Vector3();
-	var vectemp2 = new Vector3();
-	var vectemp3 = new Vector3();
+	var vectemp1 = new THREE.Vector3();
+	var vectemp2 = new THREE.Vector3();
+	var vectemp3 = new THREE.Vector3();
 
 	function SelectionBox( camera, scene, deep ) {
 
 		this.camera = camera;
 		this.scene = scene;
-		this.startPoint = new Vector3();
-		this.endPoint = new Vector3();
+		this.startPoint = new THREE.Vector3();
+		this.endPoint = new THREE.Vector3();
 		this.collection = [];
 		this.deep = deep || Number.MAX_VALUE;
 
@@ -200,4 +200,4 @@ var SelectionBox = ( function () {
 
 } )();
 
-export { SelectionBox };
+//export { SelectionBox };
