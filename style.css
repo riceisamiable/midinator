@@ -349,6 +349,13 @@ label {
     background: rgba(255,165,0,0.5);
 }
 
+
+.columnLabel {
+    pointer-events: none;
+    text-align: center;
+    position: fixed;
+}
+
 /****************** close ******************/
 
 .close {

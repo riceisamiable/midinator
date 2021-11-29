@@ -1,0 +1,165 @@
+{ "midiFile":"/Users/davidkurz/Documents/Lights_Project/Midi/MIDI Vitalic - Poison Lips (Extended Mix) V1.mid",
+   "audioFile":"/Users/davidkurz/Documents/Lights_Project/Songs/Vitalic - Poison Lips (Extended Mix) Zippylist.club.wav",
+   "midiEvents":[
+                  {
+                  "track": 1,
+                  "delta": 47,
+                  "tick": 95,
+                  "byteIndex": 81,
+                  "name": "Note on",
+                  "channel": 1,
+                  "noteNumber": 36,
+                  "noteName": "C2",
+                  "velocity": 24,
+                  "programs": [{"name": "solid",
+                                "title": "User Provided Name",
+                                "columnParams": {
+                                        "type": "sequence",
+                                        "manualSelections": [[1],[1,2,3],[4,5,6],[3,15,2,5],[13,2,4,3,4,10]]},
+                                "offsetStart": 100,
+                                "offsetEnd": 50,
+                                "keyFrames":  [ { "keyName": "1",
+                                                  "duration": 300,
+                                                  "Params": { "y": { "ease": "easeCubicOut",
+                                                                     "start": 0,
+                                                                     "end": 180,
+                                                                     "speed": 1
+                                                                    },
+                                                              "height": {
+                                                                "ease": "easeCubicOut",
+                                                                "start": 40,
+                                                                "end": 100,
+                                                                "speed": 1
+                                                              },
+                                                              "color": [
+                                                                {
+                                                                  "value": "rgba(255, 0, 0, 1)",
+                                                                  "opacity": {
+                                                                    "ease": "easeCubicOut",
+                                                                    "start": 1,
+                                                                    "end": .2,
+                                                                    "speed": 1
+                                                                  }
+                                                                },
+                                                                {
+                                                                  "value": "rgba(140, 0, 252, 1)",
+                                                                  "opacity": {
+                                                                    "ease": "easeCubicIn",
+                                                                    "start": 1,
+                                                                    "end": 1,
+                                                                    "speed": 1
+
+                                                                  }
+                                                                }
+                                                              ]
+                                                  }
+                                                },
+                                                { "keyName": "2",
+                                                  "duration": 1000,
+                                                  "params":{"y": { "ease": "easeCubicOut",
+                                                                   "start": 180,
+                                                                   "end": 0,
+                                                                   "speed": 1
+                                                                  },
+                                                            "height": {
+                                                              "ease": "easeCubicOut",
+                                                              "start": 100,
+                                                              "end": 40,
+                                                              "speed": 1
+                                                            },
+                                                            "color": [
+                                                              {
+                                                                "value": "rgba(255, 0, 0, 1)",
+                                                                "opacity": {
+                                                                  "ease": "easeCubicOut",
+                                                                  "start": 1,
+                                                                  "end": .2,
+                                                                  "speed": 1
+                                                                }
+                                                              },
+                                                              {
+                                                                "value": "rgba(140, 0, 252, 1)",
+                                                                "opacity": {
+                                                                  "ease": "easeCubicIn",
+                                                                  "start": 1,
+                                                                  "end": 1,
+                                                                  "speed": 1
+                                                                }
+                                                              }
+                                                            ]
+                                                  }
+                                                },
+                                                { "keyName": "3",
+                                                  "duration": 500,
+                                                  "params":{"y": { "ease": "easeBounce",
+                                                                   "start": 0,
+                                                                   "end": 360,
+                                                                   "speed": 1
+                                                                  },
+                                                            "height": {
+                                                              "ease": "easeCubic",
+                                                              "start": 40,
+                                                              "end": 300,
+                                                              "speed": 1
+                                                            },
+                                                            "color": [
+                                                              {
+                                                                "value": "rgba(255, 0, 0, 1)",
+                                                                "opacity": {
+                                                                  "ease": "easeCubicIn",
+                                                                  "start": 1,
+                                                                  "end": .2,
+                                                                  "speed": 1
+                                                                }
+                                                              },
+                                                              {
+                                                                "value": "rgba(140, 0, 252, 1)",
+                                                                "opacity": {
+                                                                  "ease": "easeCubicIn",
+                                                                  "start": 1,
+                                                                  "end": 1,
+                                                                  "speed": 1
+                                                                }
+                                                              }
+                                                            ]
+                                                  }
+                                                },
+                                                { "keyName": "4",
+                                                  "duration": 1000,
+                                                  "params":{"y": { "ease": "easeBounce",
+                                                                   "start": 360,
+                                                                   "end": 0,
+                                                                   "speed": 1
+                                                                  },
+                                                            "height": {
+                                                              "ease": "easeCubicOut",
+                                                              "start": 90,
+                                                              "end": 0,
+                                                              "speed": 1
+                                                            },
+                                                            "color": [
+                                                              {
+                                                                "value": "rgba(0, 0, 255, 1)",
+                                                                "opacity": {
+                                                                  "ease": "easeCubicIn",
+                                                                  "start": 1,
+                                                                  "end": 0,
+                                                                  "speed": 1
+                                                                }
+                                                              },
+                                                              {
+                                                                "value": "rgba(140, 0, 134, 1)",
+                                                                "opacity": {
+                                                                  "ease": "easeCubicIn",
+                                                                  "start": 1,
+                                                                  "end": 1,
+                                                                  "speed": 1
+                                                                }
+                                                              }
+                                                            ]
+                                                  }
+                                                }
+                                              ]
+                            }]
+                  }]
+}

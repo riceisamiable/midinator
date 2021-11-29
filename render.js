@@ -61,8 +61,11 @@ const roomDepth = (colSpacing + singleColumnWidth) * colDepthCount
 const imageColumnWidth = 40
 const topVertices = [0,1,4,5,8,9,10,11,16,17,20,21]
 const bottomVertices = [2,3,6,7,12,13,14,15,18,19,22,23]
-let columnId = []
-let columnCoords = []
+
+let layerId = {0: [], 1: [], 2: [], 3: [], 4: []}
+const totalLayers = 5 // Layers of Three JS Objects (Columns)
+
+let active
 
 //This count is for drawing lines
 let count = 0
@@ -109,7 +112,7 @@ function setup () {
 
 
   // Subtract on
-  solidGeometry = new THREE.BoxBufferGeometry(singleColumnWidth - 1, colHeight+ 1, singleColumnWidth - 1)
+  solidGeometry = new THREE.BoxBufferGeometry(singleColumnWidth - .1, colHeight+ .1, singleColumnWidth - .1)
 
 //For Lights
   renderer.shadowMap.enabled = true;
@@ -150,19 +153,22 @@ function setup () {
       //   });
       // var ground = new THREE.Mesh(groundGeo, groundMat);
       // ground.rotation.x = -Math.PI / 2;
-      // ground.position.y = -50;
+      // ground.position.y = 0;
       // ground.receiveShadow = true;
       // scene.add(ground);
 
   //--------------------- Create Column Objects ------------------------------
     //Create 16 Columns Start
+    for (q = 0; q < totalLayers; q ++){
+      let columnId = []
       for (let i = 0; i < 16; i++) {
         const z = Math.floor(i / 4)
         const x = i % 4
         const xValue = Math.round(x * colSpacing)
         const zValue = Math.round(z * colSpacing)
-
-        geometry = new THREE.BoxBufferGeometry(singleColumnWidth, colHeight, singleColumnWidth)
+        // This is to prevent 'Z-Fighting'. To object overlaping the same space not rendering properly
+        let sizeOffset = q * 0.1
+        geometry = new THREE.BoxBufferGeometry(singleColumnWidth + sizeOffset, colHeight, singleColumnWidth + sizeOffset)
       // --------- Invisible Columns ----------
         // materials[i] = new THREE.MeshBasicMaterial({ map: defaultTexture })
         // materials[i].transparent = true
@@ -195,13 +201,12 @@ function setup () {
           // const regularObject = new THREE.Mesh( new THREE.BoxBufferGeometry(singleColumnWidth, colHeight, singleColumnWidth), new THREE.MeshLambertMaterial( { color: 0xC0C0C0 } ))
 
        const regularObject = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xC0C0C0, opacity: 1, transparent: true, } ))
-       if (i === 0 ){
-         console.log('Reg id: '+regularObject.id)
-       }
-       console.log(regularObject)
+
+       //console.log(regularObject)
         //const regularObject = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xC0C0C0 } ))
 
         regularObject.position.set(xValue, 50, zValue)
+        regularObject.material.opacity = 0
 
         columnId.push(regularObject.id)
 
@@ -216,7 +221,7 @@ function setup () {
           }
         }
 
-        regularObject.type = 'Interact'
+        //regularObject.type = 'Interact'
 
         scene.add(regularObject)
       // ---------------------------------------
@@ -236,6 +241,8 @@ function setup () {
         // square.position.y = -49;
         // scene.add( square )
       }
+      layerId[q] = columnId
+    }
   //---------------------- End Create Column Objects----------------------------------------------
 
   //----------------------------- Create Base Columns that do not change ------------------
@@ -261,7 +268,10 @@ function setup () {
        solidColumn.rotation.y = Math.PI / 4;
      }
    }
+   solidColumn.type = 'Interact'
 
+   // Adding the columns number to the name of the object so be able to pass it back later.
+   solidColumn.name= i+1
 
    scene.add(solidColumn)
   }
@@ -306,10 +316,10 @@ function setup () {
 
   //This is for Detectig Where mouse is, and if it is intersecting with any objects
     raycaster = new THREE.Raycaster();
-    console.log(columnId)
-    console.log(columnId[0])
-    let bob = scene.getObjectById(columnId[0])
-    console.log(bob)
+    //console.log(columnId)
+    //console.log(columnId[0])
+    //let bob = scene.getObjectById(columnId[0])
+    //console.log(bob)
  //For Highlighting when mouse over
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
@@ -348,39 +358,40 @@ function render(){
         //     }
 
       //------------------ Ray Caster For Intersecting with Objects -----------------------------
-        // raycaster.setFromCamera( mouse, camera );
-        //
-        // var intersects = raycaster.intersectObjects( scene.children );
-        // //console.log(intersects)
-        //
-        // if ( intersects.length > 0 ) {
-        //
-        //
-        //   mouseon = true
-        //   //console.log(mouseon)
-        //   //console.log(raycaster)
-        //       let obj = intersects[interactWithit(intersects)]
-        //       //console.log(obj.object.position)
-        //       //console.log(obj)
-        //
-      	// 				if ( INTERSECTED != obj.object ) {
-        //
-      	// 					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-        //
-      	// 					INTERSECTED = obj.object;
-      	// 					INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-      	// 					INTERSECTED.material.emissive.setHex( 0xff0000 );
-        //
-      	// 				}
-        //
-      	// 			} else {
-        //
-      	// 				if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-        //
-      	// 				INTERSECTED = null;
-        //         mouseon = false
-        //         //console.log(mouseon)
-      	// 			}
+        raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( scene.children );
+
+
+        if (intersects.length) {
+
+
+          mouseon = true
+          //console.log(mouseon)
+          //console.log(raycaster)
+              let obj = intersects[interactWithit(intersects)]
+              //console.log(obj.object.position)
+              //console.log(obj)
+
+
+      					if ( obj && INTERSECTED != obj.object  ) {
+
+      						if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+      						INTERSECTED = obj.object;
+      						INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+      						INTERSECTED.material.emissive.setHex( 0xff0000 );
+
+      					}
+
+      				} else {
+
+      					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+      					INTERSECTED = null;
+                mouseon = false
+                //console.log(mouseon)
+      				}
       //-----------------------------------------------------------------------------
 
 }
@@ -406,7 +417,9 @@ draw()
 // Recevive Frame Data from the editor so it can be rendered in Threejs
     ipc.on('render', (event, message) => {
       //console.log(message)
-      if (message.currentFrame[0]) {
+
+
+      if (message.currentFrame && message.currentFrame.length ) {
         // Loop through all layers of frame data and make a new object for each layer
         // Normalize the Frame data to the height of the columns in the Render window
         // Identify which columns the animations get applied to.
@@ -414,34 +427,57 @@ draw()
         // Need to fix the interaction wtih ray casting.
         // Need to figure out how /when to delete the shapes.
         let frameData = message.currentFrame
-        let yValue = parseInt(frameData[0].yValue)
-        let heightValue = parseInt(frameData[0].heightValue)
-        let color = frameData[0].colorThree
-        let opacity = frameData[0].opacityValue
-        let columns = frameData[0].manualSelections
+        let layers = frameData.length
+
+        // This Sets all the Opacity to 0 for un-used layers of column objects.
+        if (layers < totalLayers ){
+          let layNotUsed = totalLayers - layers
+          for (l = 0; l < layNotUsed; l++){
+              let lay = (totalLayers - 1) - l
+              //console.log(lay)
+              let layer =  layerId[lay]
+              for ( let u = 0; u < 16; u++){
+                let col = layer[u]
+                let column = scene.getObjectById(col)
+                column.material.opacity = 0
+              }
+          }
+        }
+
+        //Loop for the layers in the data
+        for (t = 0; t < frameData.length; t ++  ){
+        //console.log('hi')
+        let yValue = parseInt(frameData[t].yValue)
+        let heightValue = parseInt(frameData[t].heightValue)
+        let color = frameData[t].colorThree
+        let opacity = frameData[t].opacityValue
+        let columns = frameData[t].manualSelections
         //console.log(columns)
         //This is to change all the columns if there are no columns listen in the ManualSelections array.
         if (!columns.length) {
           columns = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
 
         }
-
+        //Set Opacity to 0 for at the begining on the painitng process
+        let colIndex = layerId[t]
+        //console.log(colIndex)
         for(let o = 0; o < 16; o ++){
-            let col = columnId[o]
+            let col = colIndex[o]
             //console.log(col)
-            let bob = scene.getObjectById(col)
-            bob.material.opacity = 0
+            let column = scene.getObjectById(col)
+            column.material.opacity = 0
             //console.log(bob)
         }
 
 
-        //console.log(message.manualSelections)
+        // Loop Through the Columns
         for (let p = 0; p < columns.length; p++ ){
-            let column = columns[p]
-              column =  column - 1
-              let col = columnId[column]
-              let bob = scene.getObjectById(col)
+            let col = columns[p]
+                col =  col - 1
+                col = colIndex[col]
+              let column = scene.getObjectById(col)
               //console.log(bob)
+            // Loop Through the verticies
             for (let i = 0 ; i < topVertices.length; i++){
                 let topIndex = topVertices[i]
                 let bottomIndex = bottomVertices[i]
@@ -451,24 +487,29 @@ draw()
 
                 //console.log(yValue)
                 //Change the Position of the Top and Bottom of the Columns
-                bob.geometry.attributes.position.array[top] = yValue
-                bob.geometry.attributes.position.array[bottom] = yValue -  heightValue
-                bob.geometry.attributes.position.needsUpdate = true
+                column.geometry.attributes.position.array[top] = yValue
+                column.geometry.attributes.position.array[bottom] = yValue -  heightValue
+                column.geometry.attributes.position.needsUpdate = true
 
                 //Change the color of the columns.
-                bob.material.color.setStyle(color)
-                bob.material.opacity =  opacity
+                //Color and Opacity can be changed at will and are updated automatically
+                column.material.color.setStyle(color)
+                column.material.opacity =  opacity
                 //scene.children[column].material.needsUpdate = true
 
-            }
+              }
         //console.log(frameData)
+          }
         }
       }
 
     })
 //----------------------------------------------------------------------------------------
 
-
+function clearColumnOpacity(){
+  // Should Make this function
+  null
+}
 
 
 //------------------------------------------------------------------------------------------
@@ -510,7 +551,7 @@ function onDocumentMouseUp ( event ){
   if(mouseon === true){
 
     addPoint(INTERSECTED.position)
-    console.log(INTERSECTED.position)
+    //console.log('Column Number Clicked: '+INTERSECTED.name)
     line.geometry.attributes.position.needsUpdate = true;
 
   }
@@ -518,8 +559,8 @@ function onDocumentMouseUp ( event ){
 
 // This is to add a point when drawing lines between columns.
 function addPoint (point){
-  console.log(positions)
-  if (count > 2) {
+  //console.log(positions)
+  if (count > 10) {
     count = 0
     for(let i = 0; i < positions.length; i++){
       positions[i] = 0

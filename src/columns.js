@@ -32,8 +32,21 @@ const manual = ({ manualSelections, columns }) => {
   return Object.keys(c).map(c => parseInt(c, 10))
 }
 
+let sequenceSteps = []
+
+const sequence = ({ manualSelections, delta, offsetEnd, offsetStart, sequenceSelections }) => {
+  const c = manualSelections  || {}
+  return Object.keys(c).map(c => parseInt(c, 10))
+  // should return the appropriate array of columns for this given moment
+
+  // Im pretty sure that the place that this is interpreted for a given moment is solid.js 
+}
+
+//  [ [1],[1,2,3],[4,5,6],[3,15,2,5],[13,2,4,3,4,10] ]
+
 const columnFns = {
   manual,
+  sequence,
   slide,
   randomWalk
 }
@@ -75,6 +88,28 @@ const isColumnActive = (columnNumber, params) => {
      params: {}
    }
 */
+
+//Reorders the Columns in a sequence when a column in the sequence is removed
+function reorderColumnLabels (sequenceSteps){
+  for (i = 0; i < sequenceSteps.length; i ++ ){
+    let div = sequenceSteps[i][0]
+    document.getElementById(div).innerHTML = i+1
+  }
+
+}
+
+//Clears Sequence titles / numbers when the clear button is pressed
+function clearSeqTitles (){
+   sequenceSteps = []
+  for (i = 1; i < config.totalColumns + 1; i ++ ){
+    let div = i
+    document.getElementById(div).innerHTML = ''
+  }
+
+}
+
+//---------------------------------------------------------------------
+// Create the Elements/Buttons to select Columns and Column Sequences
 const renderColumnParams = ({ programParamElem, program }) => {
   let { columnParams } = program
 
@@ -111,32 +146,99 @@ const renderColumnParams = ({ programParamElem, program }) => {
 
   window.requestAnimationFrame(animate)
 
-var isClick = false;
+  var isClick = false;
+  let firstClick
+
 
   for (let i=1; i < (config.totalColumns + 1); i++) {
     const columnInput = document.createElement('div')
+    const columnLabel = document.createElement('div')
+    columnLabel.classList.add('columnLabel')
+    columnLabel.setAttribute("id", i );
+    columnInput.appendChild(columnLabel)
     columnInput.className = 'column'
 
     columnInput.addEventListener('mousedown', (event) => {
       isClick = true;
+
+      if (columnParams.type !== 'manual' && columnParams.type !== 'sequence') return event.stopPropagation()
+
+      if (columnParams.manualSelections[i]) {
+
+        delete columnParams.manualSelections[i]
+        columnInput.classList.remove('active')
+
+        // Remove Column in sequence - Mouse Down
+        if (columnParams.type === 'sequence') {
+          let index = parseInt(columnLabel.innerHTML, 10) - 1
+          sequenceSteps.splice(index, 1)
+          columnLabel.innerHTML = ''
+          //Re Order the Remaining Columns in Sequence
+          if (sequenceSteps.length > 0){
+            reorderColumnLabels(sequenceSteps)
+          }
+        }
+
+      } else {
+        columnParams.manualSelections[i] = true
+        //console.log(i)
+        columnInput.classList.add('active')
+
+        //Add Column in Sequence
+        if (columnParams.type === 'sequence') {
+          let seqStep = [i]
+          sequenceSteps.push(seqStep)
+          let count = sequenceSteps.length
+          columnLabel.innerHTML = count
+          console.log(sequenceSteps)
+        }
+
+      }
+
+
+
     })
 
     columnInput.addEventListener('mouseup', (event) => {
       isClick = false;
+
     })
 
     columnInput.addEventListener('mouseover', (event) => {
 
       if(!isClick) return;
 
-      if (columnParams.type !== 'manual') return event.stopPropagation()
-      if (columnParams.manualSelections[i]) {
-        delete columnParams.manualSelections[i]
-        columnInput.classList.remove('active')
-      } else {
-        columnParams.manualSelections[i] = true
-        columnInput.classList.add('active')
-      }
+      if (columnParams.type !== 'manual' && columnParams.type !== 'sequence') return event.stopPropagation()
+
+          if (columnParams.manualSelections[i]) {
+            delete columnParams.manualSelections[i]
+            columnInput.classList.remove('active')
+
+            // Remove Column in sequence - Mouse Over
+            if (columnParams.type === 'sequence') {
+              let index = parseInt(columnLabel.innerHTML, 10) - 1
+              sequenceSteps.splice(index, 1)
+              columnLabel.innerHTML = ''
+              //Re Order the Remaining Columns in Sequence
+              if (sequenceSteps.length > 0){
+                reorderColumnLabels(sequenceSteps)
+              }
+
+            }
+
+          } else {
+            columnParams.manualSelections[i] = true
+            //console.log(columnParams.manualSelections)
+            columnInput.classList.add('active')
+
+            //Add Column in Sequence
+            if (columnParams.type === 'sequence') {
+              let seqStep = [i]
+              sequenceSteps.push(seqStep)
+              let count = sequenceSteps.length
+              columnLabel.innerHTML = count
+            }
+          }
     })
     columnInputs.appendChild(columnInput)
 
@@ -147,19 +249,22 @@ var isClick = false;
   clearColumnsButton.innerText = 'Clear'
   clearColumnsButton.addEventListener('click', () => {
     columnParams.manualSelections = {}
+    clearSeqTitles()
   })
-  clearColumnsButton.disabled = columnParams.type !== 'manual'
+  clearColumnsButton.disabled = columnParams.type !== 'manual' && columnParams.type !== 'sequence'
 
   const columnSelect = document.createElement('select')
   Object.keys(columnFns).forEach((type) => {
     const option = document.createElement('option')
     option.text = type
+    //console.log(option)
     columnSelect.add(option)
   })
   if (columnParams.type) columnSelect.value = columnParams.type
   columnSelect.addEventListener('input', () => {
     columnParams.type = columnSelect.value
-    clearColumnsButton.disabled = columnParams.type !== 'manual'
+    clearColumnsButton.disabled = columnParams.type !== 'manual' && columnParams.type !== 'sequence'
+
   })
   columnParamsElem.appendChild(columnSelect)
 
@@ -167,6 +272,8 @@ var isClick = false;
   columnParamsElem.appendChild(clearColumnsButton)
   programParamElem.appendChild(columnParamsElem)
 }
+
+
 
 module.exports = {
   getColumns,

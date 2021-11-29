@@ -150,6 +150,7 @@ const preRender = ({
   const t = delta / length
 
   const heightParam = new Param(height)
+  //console.log(heightParam)
   const heightValue = heightParam.getValue(t)
   frameData.heightValue = heightValue
 
@@ -193,7 +194,7 @@ const preRender = ({
   return frameData
 }
 //----------------------------------------------------------------------
-
+//---------Pre Render Se
 module.exports = {
   renderParams,
   run,

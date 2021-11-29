@@ -509,7 +509,8 @@ const renderApp = () => {
     drawNote(midiEvent)
   })
 
-  //preRender()
+  console.log(Project)
+  preRender()
 
 
 }

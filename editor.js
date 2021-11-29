@@ -117,6 +117,7 @@ const loadMidiFile = () => {
       loadMidiPlayer(Project.midiFile)
       const player = getPlayer()
       Project.midiEvents = player.getEvents()[0]
+      //console.log(Project)
       renderApp()
 
     }
@@ -124,28 +125,51 @@ const loadMidiFile = () => {
 }
 //---------------------- Pre Render Utility Functions  --------------------------
 //Helper Function to Normalize Data to 0 - 100 pixels high.
-function normalizeHeightData(value) {
-
-  //console.log('Orig: '+ value)
-  let x = value
-  //  x = 640 - x
-  x = x / 360
-  x = x * 100
-  //console.log('New: '+ x )
-  return x
+function normalizeHeightData(value, transformTo) {
+    if(transformTo === 'ThreeJS'){
+      //console.log('Orig: '+ value)
+      let x = value
+      //  x = 640 - x
+      x = x / 360
+      x = x * 100
+      //console.log('New: '+ x )
+      return x
+    }
+    if(transformTo === 'DataStore'){
+      //console.log('Orig: '+ value)
+      let x = value
+      //  x = 640 - x
+      x = x / 100
+      x = x * 360
+      //console.log('New: '+ x )
+      return x
+    }
 }
 
-function normalizeYValueData(value) {
-
-  //console.log('Orig: '+ value)
-  let x = value
-  x = 360 - x
-  x = x / 360
-  x = x * 100
-  x = x - 50
-  //console.log('New: '+ x )
-  return x
+function normalizeYValueData(value, transformTo) {
+  if(transformTo === 'ThreeJS'){
+    //console.log('Orig: '+ value)
+    let x = value
+    x = 360 - x
+    x = x / 360
+    x = x * 100
+    x = x - 50
+    //console.log('New: '+ x )
+    return x
+  }
+  if(transformTo === 'DataStore'){
+    //console.log('Orig: '+ value)
+    let x = value
+    x = x + 50
+    x = x / 100
+    x = x * 360
+    x = 360 - x
+    //console.log('New: '+ x )
+    return x
+  }
 }
+
+
 //---------------------------------------------------------------------------
 
 
@@ -163,11 +187,11 @@ preRender = () => {
     const midiEvent = Project.midiEvents[d]
     midiEvent.programs.forEach((program) => {
       //Adjust Height Parameter
-      program.params.height.start = normalizeHeightData(program.params.height.start)
-      program.params.height.end = normalizeHeightData(program.params.height.end)
+      program.params.height.start = normalizeHeightData(program.params.height.start,'ThreeJS')
+      program.params.height.end = normalizeHeightData(program.params.height.end,'ThreeJS')
       //Adjust Y Parameter
-      program.params.y.start = normalizeYValueData(program.params.y.start)
-      program.params.y.end = normalizeYValueData(program.params.y.end)
+      program.params.y.start = normalizeYValueData(program.params.y.start,'ThreeJS')
+      program.params.y.end = normalizeYValueData(program.params.y.end,'ThreeJS')
 
     })
   }
@@ -203,7 +227,18 @@ preRender = () => {
     jsonfile.writeFileSync('frameData.json', render)
     frameDataFile = JSON.parse(fs.readFileSync('./frameData.json'))
 
-    //render = {};
+      // Convert Project Back to Normal
+    for(let d = 0; d < Project.midiEvents.length; d++){
+      const midiEvent = Project.midiEvents[d]
+      midiEvent.programs.forEach((program) => {
+        program.params.height.start = normalizeHeightData(program.params.height.start,'DataStore')
+        program.params.height.end = normalizeHeightData(program.params.height.end,'DataStore')
+
+        program.params.y.start = normalizeYValueData(program.params.y.start,'DataStore')
+        program.params.y.end = normalizeYValueData(program.params.y.end,'DataStore')
+      })
+    }
+
     console.log('Pre Render Complete')
     console.log(Project)
 }
@@ -224,7 +259,8 @@ const play = () => {
   let currentTick = 0
   const currentPosition = document.createElement('div')
   currentPosition.id = 'current-position'
-
+  const Project = getProject()
+  //console.log(Project)
   //------------------- Begin Animate Function ------------------------------------
   const animate = () => {
     if (currentPosition.parentNode) currentPosition.parentNode.removeChild(currentPosition)
@@ -431,15 +467,15 @@ const save = () => {
     if (file) {
       const Project = getProject()
       console.log(Project)
-// This bit is just to change the scale of the param data. This only needs to be done once to rescale previous video height of 360 px to 100 px.
+     // Convert Project Back to Normal
       // for(let d = 0; d < Project.midiEvents.length; d++){
       //   const midiEvent = Project.midiEvents[d]
       //   midiEvent.programs.forEach((program) => {
-      //     program.params.height.start = normalizeData(program.params.height.start)
-      //     program.params.height.end = normalizeData(program.params.height.end)
+      //     program.params.height.start = normalizeHeightData(program.params.height.start,'DataStore')
+      //     program.params.height.end = normalizeHeightData(program.params.height.end,'DataStore')
       //
-      //     program.params.y.start = normalizeData(program.params.y.start)
-      //     program.params.y.end = normalizeData(program.params.y.end)
+      //     program.params.y.start = normalizeYValueData(program.params.y.start,'DataStore')
+      //     program.params.y.end = normalizeYValueData(program.params.y.end,'DataStore')
       //   })
       // }
 
